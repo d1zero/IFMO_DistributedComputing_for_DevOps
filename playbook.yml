@@ -40,13 +40,14 @@
         path: "{{ project_directory }}"
         state: directory
 
-    - name: Copy docker-compose.yml
+    - name: Copy files
       copy:
-        src: files/docker-compose.yml
-        dest: "{{ project_directory }}/docker-compose.yml"
+        src: files/
+        dest: "{{ project_directory }}/"
+        directory_mode:
 
     - name: Runs Wordpress from Docker Compose
-      command: docker-compose up -d
+      command: docker-compose up  -d
       args:
         chdir: "{{ project_directory }}"
 
