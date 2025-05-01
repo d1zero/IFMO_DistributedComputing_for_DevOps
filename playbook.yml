@@ -3,7 +3,7 @@
   vars:
     project_directory: /opt/wordpress
   tasks:
-    - name: Установить необходимые пакеты
+    - name: Установка пакетов
       apt:
         name: 
           - apt-transport-https
@@ -12,17 +12,17 @@
           - software-properties-common
         state: present
 
-    - name: Добавить официальные GPG ключи Docker
+    - name: Добавление GPG ключей Docker
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
 
-    - name: Добавить репозиторий Docker
+    - name: Добавление репозитория Docker
       apt_repository:
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
         state: present
 
-    - name: Установить Docker
+    - name: Установка Docker
       apt:
         name: 
           - docker-ce
@@ -35,18 +35,19 @@
         state: started
         enabled: yes
 
-    - name: Make directory for WordPress
+    - name: Создание папки под WordPress
       file:
         path: "{{ project_directory }}"
         state: directory
 
-    - name: Copy docker-compose.yml
+    - name: Копирование файлов
       copy:
-        src: files/docker-compose.yml
-        dest: "{{ project_directory }}/docker-compose.yml"
+        src: files/
+        dest: "{{ project_directory }}/"
+        directory_mode:
 
-    - name: Runs Wordpress from Docker Compose
-      command: docker-compose up -d
+    - name: Запуск WordPress через docker-compose
+      command: docker-compose up  -d
       args:
         chdir: "{{ project_directory }}"
 
