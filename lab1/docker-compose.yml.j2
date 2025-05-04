@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    volumes:
+      - {{ mysql_volume }}:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: {{ mysql_root_password }}
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: {{ wordpress_db_password }}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p{{ mysql_root_password }}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    image: wordpress:latest
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - {{ wordpress_volume }}:/var/www/html
+    ports:
+      - "80:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: {{ wordpress_db_password }}
+      WORDPRESS_DB_NAME: wordpress
+
+volumes:
+  {{ mysql_volume }}:
+  {{ wordpress_volume }}:

@@ -1,0 +1,52 @@
+- name: Deploy MySQL and WordPress with Docker Compose using Docker Volumes
+  hosts: praktikum
+  become: yes
+  vars:
+    compose_dir: "/opt/wordpress"
+    compose_file: "{{ compose_dir }}/docker-compose.yml"
+    mysql_volume: "mysql_data"
+    wordpress_volume: "wordpress_data"
+    mysql_root_password: "secure_root_password"
+    wordpress_db_password: "secure_wp_password"
+
+  tasks:
+    - name: Install required packages for Debian
+      apt:
+        name:
+          - docker.io
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+
+    - name: Create compose directory
+      file:
+        path: "{{ compose_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create Docker Compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_file }}"
+        mode: '0644'
+
+    - name: Deploy Docker Compose services
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_dir }}"
+        files: "{{ compose_file | basename }}"
+        state: present
+      register: compose_result
+
+    - name: Check MySQL container logs for errors
+      command: docker compose -f {{ compose_file }} logs mysql
+      args:
+        chdir: "{{ compose_dir }}"
+      register: mysql_logs
+      failed_when: "'ERROR' in mysql_logs.stdout"
+
+    - name: Check WordPress container logs for errors
+      command: docker compose -f {{ compose_file }} logs wordpress
+      args:
+        chdir: "{{ compose_dir }}"
+      register: wordpress_logs
+      failed_when: "'ERROR' in wordpress_logs.stdout"

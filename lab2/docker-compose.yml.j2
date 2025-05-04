@@ -1,0 +1,71 @@
+services:
+  mysql:
+    image: mysql:8.0
+    volumes:
+      - {{ mysql_volume }}:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: {{ mysql_root_password }}
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: {{ wordpress_db_password }}
+    command: --server-id=1 --log-bin=mysql-bin --binlog-do-db=wordpress
+    ports:
+      - 3306:3306
+    networks:
+      - wp_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p{{ mysql_root_password }}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mysql_replica:
+    image: mysql:8.0
+    volumes:
+      - {{ mysql_replica_volume }}:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: {{ mysql_root_password }}
+    command: --server-id=2 --log-bin=mysql-bin
+    ports:
+      - 3307:3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - wp_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p{{ mysql_root_password }}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    image: wordpress:latest
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - {{ wordpress_volume }}:/var/www/html
+    ports:
+      - "80:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: {{ wordpress_db_password }}
+      WORDPRESS_DB_NAME: wordpress
+    networks:
+      - wp_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  wp_network:
+    driver: bridge
+
+volumes:
+  {{ mysql_volume }}:
+  {{ wordpress_volume }}:
+  {{ mysql_replica_volume }}:
